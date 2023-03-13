@@ -15,6 +15,10 @@ type Action =
   | DispatchAction<"numberFactResponse:failed">;
 
 class Feature extends ReducerProtocol<State, Action> {
+  constructor(private readonly numberFact: () => Promise<string>) {
+    super();
+  }
+
   initialState = {
     count: 0,
     numberFactAlert: null,
@@ -36,9 +40,7 @@ class Feature extends ReducerProtocol<State, Action> {
       case "numberFactButtonTapped": {
         return async () => {
           try {
-            const res = await fetch(
-              `http://numbersapi.com/${state.count}/trivia`
-            ).then((d) => d.text());
+            const res = await this.numberFact();
             return { tag: "numberFactResponse:success", payload: res };
           } catch (e) {
             console.error(e);
