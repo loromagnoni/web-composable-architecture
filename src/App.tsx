@@ -1,27 +1,43 @@
-import createStore from "./core/Store";
-import useStore from "./core/useStore";
-import Feature from "./features/RandomFact/Feature";
-import FeatureView from "./features/RandomFact/FeatureView";
+import { combine } from "./core/combine";
+import { scope } from "./core/scope";
+import { createStore, store } from "./core/store";
+import {
+  apiClientInitialState,
+  apiClientReducer,
+  LiveAPIClient,
+} from "./features/api-client/implementation";
+import { apiClientSelector } from "./features/api-client/implementation/apiClientSelector";
+import {
+  Counter,
+  counterInitialState,
+  counterReducer,
+} from "./features/counter/implementation";
+import { counterSelector } from "./features/counter/logic/counterSelector";
 
-const feature = new Feature(
-  async () =>
-    await fetch(`http://numbersapi.com/${state.count}/trivia`).then((d) =>
-      d.text()
-    )
+const liveAPIClient = new LiveAPIClient();
+const initialState = {
+  counter: counterInitialState(),
+  apiClientState: apiClientInitialState(),
+};
+const reducerCreator = combine(
+  scope(counterReducer(liveAPIClient), counterSelector),
+  scope(apiClientReducer(), apiClientSelector)
 );
-const featureStore = createStore({
-  initialState: feature.initialState,
-  reducer: feature.reducer,
+createStore({
+  initialState,
+  reducerCreator,
 });
+liveAPIClient.initialize(store.dispatch, () => {
+  const appState = store.getSnapshot();
+  return appState?.apiClientState;
+});
+liveAPIClient.loadAllPokemonIDs();
 
 function App() {
-  const store = useStore(featureStore);
   return (
     <div>
       App
-      <div>
-        <FeatureView store={store as any} />
-      </div>
+      <Counter />
     </div>
   );
 }

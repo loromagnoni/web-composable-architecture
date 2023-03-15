@@ -1,12 +1,14 @@
 import { useSyncExternalStore } from "react";
+import { store } from "./store";
 
-export default function useStore(featureStore: any) {
+export default function useStore(selector: any) {
   const state = useSyncExternalStore(
-    featureStore.subscribe,
-    featureStore.getSnapshot
+    store.subscribe,
+    selector.toLocalState(store.getSnapshot)
   );
   return {
-    dispatch: featureStore.dispatch,
+    //TODO: scope dispatch
+    dispatch: store.dispatch,
     state,
   };
 }

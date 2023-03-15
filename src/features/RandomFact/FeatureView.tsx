@@ -1,5 +1,5 @@
 import { action } from "../../core/dispatchAction";
-import { StoreOf } from "../../core/Store";
+import { StoreOf } from "../../core/store";
 import Feature from "./Feature";
 
 type FeatureViewProps = {

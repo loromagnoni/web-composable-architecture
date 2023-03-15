@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { action } from "../../core/dispatchAction";
-import createStore from "../../core/Store";
+import createStore from "../../core/store";
 import Feature from "./Feature";
 
 it("Should increment state", async () => {
