@@ -1,7 +1,7 @@
-export type Module<State, Action> = {
+export type Module<State, Action extends readonly any[]> = {
   initialState: () => State;
   action: Action;
-  reducer: () => (s: State, a: Action) => any;
+  reducer: () => (s: State, a: Action[number]) => void;
 };
 
 type Props<State, Action extends Readonly<any[]>> = {
@@ -10,7 +10,7 @@ type Props<State, Action extends Readonly<any[]>> = {
   reducer: () => (s: State, a: Action[number]) => void;
 };
 
-export function createModule<State, Action extends Readonly<any[]>>({
+export function createModule<State, Action extends readonly any[]>({
   initialState,
   action,
   reducer,
