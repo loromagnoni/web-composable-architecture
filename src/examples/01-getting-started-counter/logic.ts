@@ -5,7 +5,7 @@ export const logic = createModule({
     count: 0,
   }),
   action: ["incrementButtonTapped", "decrementButtonTapped"] as const,
-  reducer: () => (state, action) => {
+  reducer: (state, action) => {
     switch (action) {
       case "incrementButtonTapped":
         state.count += 1;

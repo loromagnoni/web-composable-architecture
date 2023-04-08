@@ -1,13 +1,13 @@
 export type Module<State, Action extends readonly any[]> = {
   initialState: () => State;
   action: Action;
-  reducer: () => (s: State, a: Action[number]) => void;
+  reducer: (s: State, a: Action[number]) => void;
 };
 
 type Props<State, Action extends Readonly<any[]>> = {
   initialState: () => State;
   action: Action;
-  reducer: () => (s: State, a: Action[number]) => void;
+  reducer: (s: State, a: Action[number]) => void;
 };
 
 export function createModule<State, Action extends readonly any[]>({

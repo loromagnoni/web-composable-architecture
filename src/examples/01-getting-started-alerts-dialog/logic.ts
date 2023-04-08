@@ -24,7 +24,7 @@ export const logic = createModule({
     "decrementButtonTapped",
     "incrementButtonTapped",
   ] as const,
-  reducer: () => (state, action) => {
+  reducer: (state, action) => {
     switch (action) {
       case "alertButtonTapped":
         state.alert = {

@@ -11,7 +11,7 @@ export type StoreOf<T> = T extends Module<infer State, infer Action>
 
 export const useStore: UseStore = (module) => {
   const [state, setState] = useImmer(module.initialState());
-  const reducer = module.reducer();
+  const reducer = module.reducer;
   const dispatch = (action: any) => {
     setState((draft: any) => {
       reducer(draft, action);
