@@ -1,11 +1,12 @@
+import { StoreOf } from "../../tyca/react/useStore";
+import { logic } from "./logic";
+
 type CounterViewProps = {
-  store: any;
+  store: StoreOf<typeof logic>;
 };
 
 export default function CounterView({ store }: CounterViewProps) {
   const [state, dispatch] = store;
-  console.log("render CounterView");
-  console.log("store received", store);
   return (
     <div>
       <button onClick={() => dispatch("incrementButtonTapped")}></button>
