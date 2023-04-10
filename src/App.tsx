@@ -1,11 +1,10 @@
-import AlertsDialog from "./examples/01-getting-started-alerts-dialog/AlertsDialog";
-import Counter from "./examples/01-getting-started-counter/Counter";
+import CounterModuleRunner from "./examples/01-getting-started-counter/CounterModuleRunner";
 
 function App() {
   return (
     <div>
       App
-      <AlertsDialog />
+      <CounterModuleRunner />
     </div>
   );
 }

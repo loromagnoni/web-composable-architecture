@@ -1,18 +1,15 @@
-import { createModule } from "../../tyca/module";
+import { defineModule } from "../../tyca/module";
 
-export const logic = createModule({
+export const counter = defineModule(() => ({
   initialState: () => ({
     count: 0,
   }),
-  action: ["incrementButtonTapped", "decrementButtonTapped"] as const,
-  reducer: (state, action) => {
-    switch (action) {
-      case "incrementButtonTapped":
-        state.count += 1;
-        return;
-      case "decrementButtonTapped":
-        state.count -= 1;
-        return;
-    }
+  reducer: {
+    didTapIncrementButton: (state: any) => {
+      state.count++;
+    },
+    didTapDecrementButton: (state: any) => {
+      state.count--;
+    },
   },
-});
+}));
