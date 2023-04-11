@@ -1,4 +1,5 @@
 import produce from "immer";
+import { pipe } from "./utils";
 
 export type Module<State, Action extends string[]> = {
   initialState: () => State;
@@ -19,7 +20,7 @@ const bindReducer = (
   reducer: any,
   getState: any,
   setState: any,
-  selector?: any
+  selector: any = (state: any) => state
 ): any => {
   return Object.fromEntries(
     Object.entries(reducer).map(([key, fn]) => [
@@ -32,7 +33,12 @@ const bindReducer = (
             setState(newState);
           }
         : isSubReducer(fn)
-        ? bindReducer(fn.reducer, getState, setState, fn.selector)
+        ? bindReducer(
+            fn.reducer,
+            getState,
+            setState,
+            pipe(selector, fn.selector)
+          )
         : bindReducer(fn, getState, setState),
     ])
   );
@@ -74,17 +80,23 @@ export function defineModule<State, Action extends string[]>(props: any): any {
 }
 
 export const combine = (modules: any) => {
+  const mapped = Object.fromEntries(
+    Object.entries(modules).map(([key, module]) => [
+      key,
+      (module as any).composable(),
+    ])
+  );
   return defineModule(() => ({
     initialState: () => {
       return Object.fromEntries(
-        Object.entries(modules).map(([key, module]) => [
+        Object.entries(mapped).map(([key, module]) => [
           key,
           (module as any).initialState(),
         ])
       );
     },
     reducer: Object.fromEntries(
-      Object.entries(modules).map(([key, module]) => [
+      Object.entries(mapped).map(([key, module]) => [
         key,
         {
           selector: (state: any) => state[key],

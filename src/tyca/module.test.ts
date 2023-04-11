@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { combine, defineModule } from "./module";
 import { counter } from "../examples/01-getting-started-counter/logic";
+import { current } from "immer";
 
 it("should create module", () => {
   const module = defineModule(() => ({
@@ -139,8 +140,8 @@ it("modules can be composed using combine API", () => {
   }));
 
   const composedModule = combine({
-    firstCounter: counter.composable(),
-    secondCounter: counter.composable(),
+    firstCounter: counter,
+    secondCounter: counter,
   });
   const instance = composedModule.create();
   expect(instance.getState()).toStrictEqual({
@@ -154,5 +155,60 @@ it("modules can be composed using combine API", () => {
   expect(instance.getState()).toStrictEqual({
     firstCounter: { count: 1 },
     secondCounter: { count: -1 },
+  });
+});
+
+it("module cannot access other module state", () => {
+  const stateCollector: any[] = [];
+  const counter = defineModule(() => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count++;
+        stateCollector.push(current(state));
+      },
+    },
+  }));
+  const composedModule = combine({
+    firstCounter: counter,
+    secondCounter: counter,
+  });
+  const instance = composedModule.create();
+  instance.send.firstCounter.didTapIncrementButton();
+  instance.send.secondCounter.didTapIncrementButton();
+  expect(stateCollector).toStrictEqual([{ count: 1 }, { count: 1 }]);
+});
+
+it("module can be composed recursively", () => {
+  const stateCollector: any[] = [];
+  const counter = defineModule(() => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count++;
+        stateCollector.push(current(state));
+      },
+    },
+  }));
+  const couple = combine({
+    firstCounter: counter,
+    secondCounter: counter,
+  });
+  const composed = combine({
+    firstCouple: couple,
+    secondCouple: couple,
+  });
+  const instance = composed.create();
+  instance.send.firstCouple.firstCounter.didTapIncrementButton();
+  instance.send.secondCouple.firstCounter.didTapIncrementButton();
+  expect(instance.getState()).toStrictEqual({
+    firstCouple: {
+      firstCounter: { count: 1 },
+      secondCounter: { count: 0 },
+    },
+    secondCouple: {
+      firstCounter: { count: 1 },
+      secondCounter: { count: 0 },
+    },
   });
 });
