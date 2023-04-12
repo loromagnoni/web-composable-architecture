@@ -1,5 +1,6 @@
 import produce from "immer";
 import { pipe } from "./utils";
+import "reflect-metadata";
 
 export type Module<State, Action extends string[]> = {
   initialState: () => State;
@@ -44,16 +45,54 @@ const bindReducer = (
   );
 };
 
-export function defineModule<State, Action extends string[]>(props: any): any {
-  const { initialState, reducer } = props();
+export function defineModule<
+  State,
+  Action extends string[],
+  Environment extends Object
+>(creator: (arg: Environment) => any) {
+  const environment: Partial<Environment> = {};
+
+  const inject = (obj: Partial<Environment>) => {
+    Object.entries(obj).forEach((entry) => {
+      const key = entry[0] as keyof Environment;
+      const dep = entry[1] as Environment[keyof Environment];
+      environment[key] = dep;
+    });
+  };
+
+  const createInjector = (dependencies: any) => {
+    return new Proxy(
+      {},
+      {
+        get: (target: any, property: string) => {
+          if (!(property in target)) {
+            if (!(property in dependencies)) {
+              throw new Error(`Dependency ${property} not found`);
+            }
+            target[property] = dependencies[property];
+          }
+          return target[property];
+        },
+      }
+    );
+  };
+
+  const withEnvironment = () => {
+    const injector = createInjector(environment);
+    return creator(injector);
+  };
+
   return {
     composable: () => {
+      const { initialState, reducer } = withEnvironment();
       return {
         initialState,
         reducer,
       };
     },
+    inject,
     create: () => {
+      const { initialState, reducer } = withEnvironment();
       let listeners: any[] = [];
       let state = structuredClone(initialState());
       const setState = (newState: any) => {

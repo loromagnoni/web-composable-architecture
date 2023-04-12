@@ -212,3 +212,41 @@ it("module can be composed recursively", () => {
     },
   });
 });
+
+type CounterEnvironment = {
+  amountProvider: {
+    getAmount(): number;
+  };
+};
+
+it("module can require dependencies", () => {
+  const provider = {
+    getAmount() {
+      return 2;
+    },
+  };
+  const counter = defineModule(({ amountProvider }: CounterEnvironment) => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count += amountProvider.getAmount();
+      },
+    },
+  }));
+  // counter.inject({ amountProvider: provider });
+  const instance = counter.create({ amountProvider: provider });
+  instance.send.didTapIncrementButton();
+  expect(instance.getState()).toStrictEqual({ count: 2 });
+});
+
+it("should throw error if dependencies are not found", () => {
+  const counter = defineModule(({ amountProvider }: CounterEnvironment) => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count += amountProvider.getAmount();
+      },
+    },
+  }));
+  expect(counter.create).toThrowError("Dependency amountProvider not found");
+});
