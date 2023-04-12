@@ -233,7 +233,6 @@ it("module can require dependencies", () => {
       },
     },
   }));
-  // counter.inject({ amountProvider: provider });
   const instance = counter.create({ amountProvider: provider });
   instance.send.didTapIncrementButton();
   expect(instance.getState()).toStrictEqual({ count: 2 });
@@ -248,5 +247,171 @@ it("should throw error if dependencies are not found", () => {
       },
     },
   }));
-  expect(counter.create).toThrowError("Dependency amountProvider not found");
+  expect(counter.create).toThrowError();
+});
+
+it("composed module dependencies are merged", () => {
+  const amountProvider = {
+    getAmount() {
+      return 2;
+    },
+  };
+  const oddAmountProvider = {
+    getAmount() {
+      return 5;
+    },
+  };
+  const counterCreator = defineModule(({ amountProvider }: any) => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count += amountProvider.getAmount();
+      },
+    },
+  }));
+  const oddCounterCreator = defineModule(
+    ({ amountProvider, oddAmountProvider }: any) => ({
+      initialState: () => ({ count: oddAmountProvider.getAmount() }),
+      reducer: {
+        didTapIncrementButton: (state: any) => {
+          state.count +=
+            state % 2 === 0
+              ? amountProvider.getAmount()
+              : oddAmountProvider.getAmount();
+        },
+      },
+    })
+  );
+  const composed = defineModule(
+    ({ amountProvider, oddAmountProvider }: any) => {
+      const firstCounter = counterCreator.composable({ amountProvider });
+      const secondCounter = oddCounterCreator.composable({
+        amountProvider,
+        oddAmountProvider,
+      });
+      return {
+        initialState: () => ({
+          firstCounter: firstCounter.initialState(),
+          secondCounter: secondCounter.initialState(),
+        }),
+        reducer: {
+          firstCounter: {
+            selector: (state: any) => state.firstCounter,
+            reducer: firstCounter.reducer,
+          },
+          secondCounter: {
+            selector: (state: any) => state.secondCounter,
+            reducer: secondCounter.reducer,
+          },
+        },
+      };
+    }
+  );
+  const instance = composed.create({ amountProvider, oddAmountProvider });
+  instance.send.firstCounter.didTapIncrementButton();
+  instance.send.secondCounter.didTapIncrementButton();
+  expect(instance.getState()).toStrictEqual({
+    firstCounter: { count: 2 },
+    secondCounter: { count: 10 },
+  });
+});
+
+it("composed module dependencies are merged using compose API", () => {
+  const amountProvider = {
+    getAmount() {
+      return 2;
+    },
+  };
+  const oddAmountProvider = {
+    getAmount() {
+      return 5;
+    },
+  };
+  const counterCreator = defineModule(({ amountProvider }: any) => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count += amountProvider.getAmount();
+      },
+    },
+  }));
+  const oddCounterCreator = defineModule(
+    ({ amountProvider, oddAmountProvider }: any) => ({
+      initialState: () => ({ count: oddAmountProvider.getAmount() }),
+      reducer: {
+        didTapIncrementButton: (state: any) => {
+          state.count +=
+            state % 2 === 0
+              ? amountProvider.getAmount()
+              : oddAmountProvider.getAmount();
+        },
+      },
+    })
+  );
+  const composed = combine({
+    firstCounter: counterCreator,
+    secondCounter: oddCounterCreator,
+  });
+  const instance = composed.create({ amountProvider, oddAmountProvider });
+  instance.send.firstCounter.didTapIncrementButton();
+  instance.send.secondCounter.didTapIncrementButton();
+  expect(instance.getState()).toStrictEqual({
+    firstCounter: { count: 2 },
+    secondCounter: { count: 10 },
+  });
+});
+
+it("dependencies are merged recursively", () => {
+  const amountProvider = {
+    getAmount() {
+      return 2;
+    },
+  };
+  const oddAmountProvider = {
+    getAmount() {
+      return 5;
+    },
+  };
+  const counterCreator = defineModule(({ amountProvider }: any) => ({
+    initialState: () => ({ count: 0 }),
+    reducer: {
+      didTapIncrementButton: (state: any) => {
+        state.count += amountProvider.getAmount();
+      },
+    },
+  }));
+  const oddCounterCreator = defineModule(
+    ({ amountProvider, oddAmountProvider }: any) => ({
+      initialState: () => ({ count: oddAmountProvider.getAmount() }),
+      reducer: {
+        didTapIncrementButton: (state: any) => {
+          state.count +=
+            state % 2 === 0
+              ? amountProvider.getAmount()
+              : oddAmountProvider.getAmount();
+        },
+      },
+    })
+  );
+  const composed = combine({
+    firstCounter: counterCreator,
+    secondCounter: oddCounterCreator,
+  });
+  const composed2 = combine({
+    firstCouple: composed,
+    secondCouple: composed,
+  });
+  const instance = composed2.create({ amountProvider, oddAmountProvider });
+  instance.send.firstCouple.firstCounter.didTapIncrementButton();
+  instance.send.secondCouple.secondCounter.didTapIncrementButton();
+  expect(instance.getState()).toStrictEqual({
+    firstCouple: {
+      firstCounter: { count: 2 },
+      secondCounter: { count: 5 },
+    },
+    secondCouple: {
+      firstCounter: { count: 0 },
+      secondCounter: { count: 10 },
+    },
+  });
 });

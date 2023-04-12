@@ -49,50 +49,18 @@ export function defineModule<
   State,
   Action extends string[],
   Environment extends Object
->(creator: (arg: Environment) => any) {
-  const environment: Partial<Environment> = {};
-
-  const inject = (obj: Partial<Environment>) => {
-    Object.entries(obj).forEach((entry) => {
-      const key = entry[0] as keyof Environment;
-      const dep = entry[1] as Environment[keyof Environment];
-      environment[key] = dep;
-    });
-  };
-
-  const createInjector = (dependencies: any) => {
-    return new Proxy(
-      {},
-      {
-        get: (target: any, property: string) => {
-          if (!(property in target)) {
-            if (!(property in dependencies)) {
-              throw new Error(`Dependency ${property} not found`);
-            }
-            target[property] = dependencies[property];
-          }
-          return target[property];
-        },
-      }
-    );
-  };
-
-  const withEnvironment = () => {
-    const injector = createInjector(environment);
-    return creator(injector);
-  };
-
+>(creator: any) {
   return {
-    composable: () => {
-      const { initialState, reducer } = withEnvironment();
+    composable: (arg?: any) => {
+      const { initialState, reducer } = creator(arg);
       return {
         initialState,
         reducer,
       };
     },
-    inject,
-    create: () => {
-      const { initialState, reducer } = withEnvironment();
+
+    create: (arg?: any) => {
+      const { initialState, reducer } = creator(arg);
       let listeners: any[] = [];
       let state = structuredClone(initialState());
       const setState = (newState: any) => {
@@ -119,29 +87,31 @@ export function defineModule<
 }
 
 export const combine = (modules: any) => {
-  const mapped = Object.fromEntries(
-    Object.entries(modules).map(([key, module]) => [
-      key,
-      (module as any).composable(),
-    ])
-  );
-  return defineModule(() => ({
-    initialState: () => {
-      return Object.fromEntries(
+  return defineModule((arg: any) => {
+    const mapped = Object.fromEntries(
+      Object.entries(modules).map(([key, module]) => [
+        key,
+        (module as any).composable(arg),
+      ])
+    );
+    return {
+      initialState: () => {
+        return Object.fromEntries(
+          Object.entries(mapped).map(([key, module]) => [
+            key,
+            (module as any).initialState(),
+          ])
+        );
+      },
+      reducer: Object.fromEntries(
         Object.entries(mapped).map(([key, module]) => [
           key,
-          (module as any).initialState(),
+          {
+            selector: (state: any) => state[key],
+            reducer: (module as any).reducer,
+          },
         ])
-      );
-    },
-    reducer: Object.fromEntries(
-      Object.entries(mapped).map(([key, module]) => [
-        key,
-        {
-          selector: (state: any) => state[key],
-          reducer: (module as any).reducer,
-        },
-      ])
-    ),
-  }));
+      ),
+    };
+  });
 };
