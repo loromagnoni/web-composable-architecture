@@ -25,11 +25,10 @@ it("module state should be a copy of the the initial one", () => {
 });
 
 it("module can send reducer actions", () => {
-  const state = { count: 0 };
   const module = defineModule(() => ({
-    initialState: () => state,
+    initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
       },
     },

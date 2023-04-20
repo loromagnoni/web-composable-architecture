@@ -1,16 +1,7 @@
 import produce from "immer";
-import { pipe } from "./utils";
 import "reflect-metadata";
-
-export type Module<State, Action extends string[]> = {
-  initialState: () => State;
-  reducer: Record<Action[number], (s: State) => void>;
-};
-
-type Props<State, Action extends string[]> = {
-  initialState: () => State;
-  reducer: Record<Action[number], (s: State) => void>;
-};
+import { DefineModule } from "./types";
+import { pipe } from "./utils";
 
 const isSubReducer = (
   reducer: any
@@ -45,20 +36,9 @@ const bindReducer = (
   );
 };
 
-export function defineModule<
-  State,
-  Action extends string[],
-  Environment extends Object
->(creator: any) {
+export const defineModule: DefineModule = (creator) => {
   return {
-    composable: (arg?: any) => {
-      const { initialState, reducer } = creator(arg);
-      return {
-        initialState,
-        reducer,
-      };
-    },
-
+    composable: creator,
     create: (arg?: any) => {
       const { initialState, reducer } = creator(arg);
       let listeners: any[] = [];
@@ -83,8 +63,8 @@ export function defineModule<
         getState,
       };
     },
-  };
-}
+  } as const;
+};
 
 export const combine = (modules: any) => {
   return defineModule((arg: any) => {
