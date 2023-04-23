@@ -1,31 +1,32 @@
-type ActionHandler<TState> = (state: TState) => void;
-type SubReducer<TState> = {
-  selector: (state: TState) => any;
-  reducer: Reducer<TState>;
-};
+interface ActionHandler<TState> {
+  (state: TState): void;
+}
 
-type Reducer<TState> = Record<
-  string,
-  ActionHandler<TState> | SubReducer<TState>
->;
+type InferSubState<TState> = TState extends Record<any, infer TValue>
+  ? TValue
+  : never;
 
-type Module<TState> = {
+interface SubReducer<TState, TSubState = InferSubState<TState>> {
+  selector: (s: TState) => TSubState;
+  reducer: Reducer<TSubState>;
+}
+
+interface Reducer<TState> {
+  [K: string]: ActionHandler<TState> | SubReducer<TState>;
+}
+
+interface Module<TState> {
   initialState: () => TState;
   reducer: Reducer<TState>;
-};
+}
 
-type DefinitionWithArg<TState> = (arg: any) => Module<TState>;
-type DefinitionWithoutArg<TState> = () => Module<TState>;
-
-type DefinitionFunction<TState> =
-  | DefinitionWithArg<TState>
-  | DefinitionWithoutArg<TState>;
-
-type ModuleDefinition<T> = {
-  composable: T;
+interface DefinitionWithEnvironment<TState, TEnv> {
+  composable: (arg: TEnv) => Module<TState>;
   create: any;
-};
+}
 
-export type DefineModule = <TState, T extends DefinitionFunction<TState>>(
-  creator: T
-) => ModuleDefinition<typeof creator>;
+export interface DefineModule {
+  <TState, TEnv = void>(
+    creator: (env: TEnv) => Module<TState>
+  ): DefinitionWithEnvironment<TState, TEnv>;
+}

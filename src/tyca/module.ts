@@ -36,11 +36,11 @@ const bindReducer = (
   );
 };
 
-export const defineModule: DefineModule = (creator) => {
+export const defineModule: DefineModule = <T>(creator: T) => {
   return {
     composable: creator,
     create: (arg?: any) => {
-      const { initialState, reducer } = creator(arg);
+      const { initialState, reducer } = (creator as CallableFunction)(arg);
       let listeners: any[] = [];
       let state = structuredClone(initialState());
       const setState = (newState: any) => {

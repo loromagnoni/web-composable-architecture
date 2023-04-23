@@ -1,7 +1,6 @@
+import { current } from "immer";
 import { expect, it } from "vitest";
 import { combine, defineModule } from "./module";
-import { counter } from "../examples/01-getting-started-counter/logic";
-import { current } from "immer";
 
 it("should create module", () => {
   const module = defineModule(() => ({
@@ -44,7 +43,7 @@ it("module state instance don't change", () => {
   const module = defineModule(() => ({
     initialState: () => state,
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
       },
     },
@@ -60,10 +59,10 @@ it("module state instance change on update", () => {
   const module = defineModule(() => ({
     initialState: () => state,
     reducer: {
-      didTapDecrementButton: (state: any) => {
+      didTapDecrementButton: (state) => {
         state.count--;
       },
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
       },
     },
@@ -81,14 +80,63 @@ it("module can be composed", () => {
   const counterCreator = defineModule(() => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
       },
-      didTapDecrementButton: (state: any) => {
+      didTapDecrementButton: (state) => {
         state.count--;
       },
     },
   }));
+
+  const messageCreator = defineModule(() => ({
+    initialState: () => ({ message: "" }),
+    reducer: {
+      didTapSendMessageButton: (state) => {
+        state.message = "Message sent";
+      },
+    },
+  }));
+
+  //TESTING
+  const counter = counterCreator.composable();
+  const message = messageCreator.composable();
+  const test = defineModule(() => ({
+    initialState: () => ({
+      counter: counter.initialState(),
+      message: message.initialState(),
+    }),
+    reducer: {
+      counter: {
+        selector: (state) => state.counter,
+        reducer: counter.reducer,
+      },
+      message: {
+        selector: (state) => state.message,
+        reducer: message.reducer,
+      },
+    },
+  }));
+
+  const test2 = defineModule(() => {
+    return {
+      initialState: () => ({
+        counter: counter.initialState(),
+        message: message.initialState(),
+      }),
+      reducer: {
+        counter: {
+          selector: (state) => state.counter,
+          reducer: counter.reducer,
+        },
+        message: {
+          selector: (state) => state.message,
+          reducer: message.reducer,
+        },
+      },
+    };
+  });
+  //
 
   const composedModule = defineModule(() => {
     const firstCounter = counterCreator.composable();
@@ -100,16 +148,17 @@ it("module can be composed", () => {
       }),
       reducer: {
         firstCounter: {
-          selector: (state: any) => state.firstCounter,
+          selector: (state) => state.firstCounter,
           reducer: firstCounter.reducer,
         },
         secondCounter: {
-          selector: (state: any) => state.secondCounter,
+          selector: (state) => state.secondCounter,
           reducer: secondCounter.reducer,
         },
       },
     };
   });
+
   const instance = composedModule.create();
   expect(instance.getState()).toStrictEqual({
     firstCounter: { count: 0 },
@@ -129,10 +178,10 @@ it("modules can be composed using combine API", () => {
   const counter = defineModule(() => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
       },
-      didTapDecrementButton: (state: any) => {
+      didTapDecrementButton: (state) => {
         state.count--;
       },
     },
@@ -162,7 +211,7 @@ it("module cannot access other module state", () => {
   const counter = defineModule(() => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
         stateCollector.push(current(state));
       },
@@ -183,7 +232,7 @@ it("module can be composed recursively", () => {
   const counter = defineModule(() => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count++;
         stateCollector.push(current(state));
       },
@@ -212,23 +261,22 @@ it("module can be composed recursively", () => {
   });
 });
 
-type CounterEnvironment = {
-  amountProvider: {
-    getAmount(): number;
-  };
-};
-
 it("module can require dependencies", () => {
+  type CounterEnvironment = {
+    amountProvider: {
+      getAmount(): number;
+    };
+  };
   const provider = {
     getAmount() {
       return 2;
     },
   };
-  const counter = defineModule(({ amountProvider }: CounterEnvironment) => ({
+  const counter = defineModule((env: CounterEnvironment) => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
-        state.count += amountProvider.getAmount();
+      didTapIncrementButton: (state) => {
+        state.count += 3;
       },
     },
   }));
@@ -238,10 +286,15 @@ it("module can require dependencies", () => {
 });
 
 it("should throw error if dependencies are not found", () => {
+  type CounterEnvironment = {
+    amountProvider: {
+      getAmount(): number;
+    };
+  };
   const counter = defineModule(({ amountProvider }: CounterEnvironment) => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count += amountProvider.getAmount();
       },
     },
@@ -260,29 +313,38 @@ it("composed module dependencies are merged", () => {
       return 5;
     },
   };
-  const counterCreator = defineModule(({ amountProvider }: any) => ({
+  type CounterEnvironment = { amountProvider: { getAmount(): number } };
+  const counterCreator = defineModule((environment: CounterEnvironment) => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
-        state.count += amountProvider.getAmount();
+      didTapIncrementButton: (state) => {
+        state.count += environment.amountProvider.getAmount();
       },
     },
   }));
+  type OddCounterEnvironment = {
+    amountProvider: { getAmount(): number };
+    oddAmountProvider: { getAmount(): number };
+  };
   const oddCounterCreator = defineModule(
-    ({ amountProvider, oddAmountProvider }: any) => ({
+    ({ amountProvider, oddAmountProvider }: OddCounterEnvironment) => ({
       initialState: () => ({ count: oddAmountProvider.getAmount() }),
       reducer: {
-        didTapIncrementButton: (state: any) => {
+        didTapIncrementButton: (state) => {
           state.count +=
-            state % 2 === 0
+            state.count % 2 === 0
               ? amountProvider.getAmount()
               : oddAmountProvider.getAmount();
         },
       },
     })
   );
+  type ComposedEnvironment = {
+    amountProvider: { getAmount(): number };
+    oddAmountProvider: { getAmount(): number };
+  };
   const composed = defineModule(
-    ({ amountProvider, oddAmountProvider }: any) => {
+    ({ amountProvider, oddAmountProvider }: ComposedEnvironment) => {
       const firstCounter = counterCreator.composable({ amountProvider });
       const secondCounter = oddCounterCreator.composable({
         amountProvider,
@@ -295,11 +357,11 @@ it("composed module dependencies are merged", () => {
         }),
         reducer: {
           firstCounter: {
-            selector: (state: any) => state.firstCounter,
+            selector: (state) => state.firstCounter,
             reducer: firstCounter.reducer,
           },
           secondCounter: {
-            selector: (state: any) => state.secondCounter,
+            selector: (state) => state.secondCounter,
             reducer: secondCounter.reducer,
           },
         },
@@ -329,7 +391,7 @@ it("composed module dependencies are merged using compose API", () => {
   const counterCreator = defineModule(({ amountProvider }: any) => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count += amountProvider.getAmount();
       },
     },
@@ -338,9 +400,9 @@ it("composed module dependencies are merged using compose API", () => {
     ({ amountProvider, oddAmountProvider }: any) => ({
       initialState: () => ({ count: oddAmountProvider.getAmount() }),
       reducer: {
-        didTapIncrementButton: (state: any) => {
+        didTapIncrementButton: (state) => {
           state.count +=
-            state % 2 === 0
+            state.count % 2 === 0
               ? amountProvider.getAmount()
               : oddAmountProvider.getAmount();
         },
@@ -374,7 +436,7 @@ it("dependencies are merged recursively", () => {
   const counterCreator = defineModule(({ amountProvider }: any) => ({
     initialState: () => ({ count: 0 }),
     reducer: {
-      didTapIncrementButton: (state: any) => {
+      didTapIncrementButton: (state) => {
         state.count += amountProvider.getAmount();
       },
     },
@@ -383,9 +445,9 @@ it("dependencies are merged recursively", () => {
     ({ amountProvider, oddAmountProvider }: any) => ({
       initialState: () => ({ count: oddAmountProvider.getAmount() }),
       reducer: {
-        didTapIncrementButton: (state: any) => {
+        didTapIncrementButton: (state) => {
           state.count +=
-            state % 2 === 0
+            state.count % 2 === 0
               ? amountProvider.getAmount()
               : oddAmountProvider.getAmount();
         },
