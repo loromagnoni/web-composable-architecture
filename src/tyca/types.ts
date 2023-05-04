@@ -2,22 +2,30 @@ interface ActionHandler<TState> {
   (state: TState): void;
 }
 
-type InferSubState<TState> = TState extends Record<any, infer TValue>
-  ? TValue
-  : never;
-
-interface SubReducer<TState, TSubState = InferSubState<TState>> {
+interface SubReducer<TState, TSubState> {
   selector: (s: TState) => TSubState;
   reducer: Reducer<TSubState>;
 }
 
-interface Reducer<TState> {
-  [K: string]: ActionHandler<TState> | SubReducer<TState>;
+type SubReducers<TState> = {
+  [K in keyof TState as string]: SubReducer<TState, TState[K]>;
+};
+
+type ActionHandlers<TState> = Record<string, ActionHandler<TState>>;
+
+export type Reducer<TState> = ActionHandlers<TState>;
+type Compose<TState> = Partial<SubReducers<TState>>;
+
+export interface ModuleRequirements<TState> {
+  initialState: () => TState;
+  reducer?: Reducer<TState>;
+  compose?: Compose<TState>;
 }
 
-interface Module<TState> {
+export interface Module<TState> {
   initialState: () => TState;
   reducer: Reducer<TState>;
+  compose?: Compose<TState>;
 }
 
 interface DefinitionWithEnvironment<TState, TEnv> {
@@ -27,6 +35,6 @@ interface DefinitionWithEnvironment<TState, TEnv> {
 
 export interface DefineModule {
   <TState, TEnv = void>(
-    creator: (env: TEnv) => Module<TState>
+    creator: (env: TEnv) => ModuleRequirements<TState>
   ): DefinitionWithEnvironment<TState, TEnv>;
 }

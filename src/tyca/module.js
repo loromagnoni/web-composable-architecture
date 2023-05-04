@@ -1,49 +1,52 @@
 import produce from "immer";
 import "reflect-metadata";
-import { DefineModule } from "./types";
 import { pipe } from "./utils";
+import { applyPlugins } from "./plugin";
 
-const isSubReducer = (
-  reducer: any
-): reducer is { reducer: CallableFunction; selector: CallableFunction } =>
+const isSubReducer = (reducer) =>
   reducer.reducer !== undefined && reducer.selector !== undefined;
 
 const bindReducer = (
-  reducer: any,
-  getState: any,
-  setState: any,
-  selector: any = (state: any) => state
-): any => {
-  return Object.fromEntries(
+  sendRef,
+  reducer,
+  getState,
+  setState,
+  selector = (state) => state
+) => {
+  const dispatcher = Object.fromEntries(
     Object.entries(reducer).map(([key, fn]) => [
       key,
       typeof fn === "function"
-        ? () => {
-            const newState = produce(getState(), (draft: any) => {
-              return (fn as any)(selector ? selector(draft) : draft);
+        ? (payload) => {
+            let effect;
+            const newState = produce(getState(), (draft) => {
+              effect = fn(selector ? selector(draft) : draft, payload);
             });
             setState(newState);
+            if (effect && typeof effect === "function") effect(sendRef.current);
           }
         : isSubReducer(fn)
         ? bindReducer(
+            sendRef,
             fn.reducer,
             getState,
             setState,
             pipe(selector, fn.selector)
           )
-        : bindReducer(fn, getState, setState),
+        : bindReducer(sendRef, fn, getState, setState),
     ])
   );
+  return dispatcher;
 };
 
-export const defineModule: DefineModule = <T>(creator: T) => {
+export const createStore = (creator) => {
   return {
     composable: creator,
-    create: (arg?: any) => {
-      const { initialState, reducer } = (creator as CallableFunction)(arg);
-      let listeners: any[] = [];
-      let state = structuredClone(initialState());
-      const setState = (newState: any) => {
+    create: (arg) => {
+      const { state: stateDef, reducer } = creator(arg);
+      let listeners = [];
+      let state = structuredClone(stateDef);
+      const setState = (newState) => {
         state = newState;
         for (let listener of listeners) {
           listener();
@@ -52,9 +55,14 @@ export const defineModule: DefineModule = <T>(creator: T) => {
       const getState = () => {
         return state;
       };
+      const sendRef = {};
+      sendRef.current = applyPlugins(
+        bindReducer(sendRef, reducer, getState, setState),
+        getState
+      );
       return {
-        send: bindReducer(reducer, getState, setState),
-        subscribe(listener: any) {
+        send: sendRef.current,
+        subscribe(listener) {
           listeners = [...listeners, listener];
           return () => {
             listeners = listeners.filter((l) => l !== listener);
@@ -63,15 +71,15 @@ export const defineModule: DefineModule = <T>(creator: T) => {
         getState,
       };
     },
-  } as const;
+  };
 };
 
-export const combine = (modules: any) => {
-  return defineModule((arg: any) => {
+export const combine = (modules) => {
+  return createStore((arg) => {
     const mapped = Object.fromEntries(
       Object.entries(modules).map(([key, module]) => [
         key,
-        (module as any).composable(arg),
+        module.composable(arg),
       ])
     );
     return {
@@ -79,7 +87,7 @@ export const combine = (modules: any) => {
         return Object.fromEntries(
           Object.entries(mapped).map(([key, module]) => [
             key,
-            (module as any).initialState(),
+            module.initialState(),
           ])
         );
       },
@@ -87,8 +95,8 @@ export const combine = (modules: any) => {
         Object.entries(mapped).map(([key, module]) => [
           key,
           {
-            selector: (state: any) => state[key],
-            reducer: (module as any).reducer,
+            selector: (state) => state[key],
+            reducer: module.reducer,
           },
         ])
       ),
