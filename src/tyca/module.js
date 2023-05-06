@@ -1,10 +1,5 @@
 import produce from "immer";
-import "reflect-metadata";
-import { pipe } from "./utils";
 import { applyPlugins } from "./plugin";
-
-const isSubReducer = (reducer) =>
-  reducer.reducer !== undefined && reducer.selector !== undefined;
 
 const bindReducer = (
   sendRef,
@@ -16,24 +11,14 @@ const bindReducer = (
   const dispatcher = Object.fromEntries(
     Object.entries(reducer).map(([key, fn]) => [
       key,
-      typeof fn === "function"
-        ? (payload) => {
-            let effect;
-            const newState = produce(getState(), (draft) => {
-              effect = fn(selector ? selector(draft) : draft, payload);
-            });
-            setState(newState);
-            if (effect && typeof effect === "function") effect(sendRef.current);
-          }
-        : isSubReducer(fn)
-        ? bindReducer(
-            sendRef,
-            fn.reducer,
-            getState,
-            setState,
-            pipe(selector, fn.selector)
-          )
-        : bindReducer(sendRef, fn, getState, setState),
+      (payload) => {
+        let effect;
+        const newState = produce(getState(), (draft) => {
+          effect = fn(selector ? selector(draft) : draft, payload);
+        });
+        setState(newState);
+        if (effect && typeof effect === "function") effect(sendRef.current);
+      },
     ])
   );
   return dispatcher;
@@ -43,7 +28,7 @@ export const createStore = (creator) => {
   return {
     composable: creator,
     create: (arg) => {
-      const { state: stateDef, reducer } = creator(arg);
+      const { state: stateDef, reducer, compose } = creator(arg);
       let listeners = [];
       let state = structuredClone(stateDef);
       const setState = (newState) => {

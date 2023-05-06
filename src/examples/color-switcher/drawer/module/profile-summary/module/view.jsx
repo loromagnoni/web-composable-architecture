@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useStore } from "../../../../../tyca/react/useStore";
+import { useStore } from "@/tyca/react/useStore";
 
 export default function ProfileSummary() {
   const [state, dispatch] = useStore();

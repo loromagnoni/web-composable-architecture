@@ -1,4 +1,4 @@
-import { createStore } from "../../../../../tyca/module";
+import { createStore } from "@/tyca/module";
 
 export default createStore(({ userRepository }) => ({
   state: {

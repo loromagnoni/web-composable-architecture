@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { registerPlugin } from "../../../../../tyca/plugin";
+import { registerPlugin } from "../../../../../../tyca/plugin";
 import { ColorDropDown } from "../module/view";
 import { colors } from "./environment/colors";
 import { ColorDropDownModule } from "../module";

@@ -1,12 +1,9 @@
-import { createStore } from "../../../../../tyca/module";
+import { createStore } from "../../../../../../tyca/module";
 
 export default createStore(({ colors }) => ({
   state: {
     isOpen: false,
     selected: colors[0],
-    environment: {
-      colors,
-    },
   },
   reducer: {
     didTapDropdown: (state) => {
