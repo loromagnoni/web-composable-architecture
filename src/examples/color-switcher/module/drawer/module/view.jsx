@@ -4,24 +4,26 @@ import { ColorDropDownModule } from "./color-dropdown/module";
 import ProfileSummaryModule from "./profile-summary/module";
 
 export default function Drawer() {
-  const [state, dispatch] = useStore();
+  const store = useStore();
   const environment = useEnvironment();
   return (
     <div>
       <div>
-        <button onClick={dispatch.didTapIcon}>Toggle</button>
+        <button onClick={store.dispatch.didTapIcon}>Toggle</button>
       </div>
-      {state.isOpen && (
+      {store.state.isOpen && (
         <div>
           <ProfileSummaryModule
             environment={{
               userRepository: environment.userRepository,
             }}
+            store={store.profileSummary}
           />
           <ColorDropDownModule
             environment={{
               colors: environment.colors,
             }}
+            store={store.colorDropdown}
           />
         </div>
       )}

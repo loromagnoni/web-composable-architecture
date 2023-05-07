@@ -1,27 +1,104 @@
 import produce from "immer";
 import { applyPlugins } from "./plugin";
 
+const pipe =
+  (...fns) =>
+  (x) =>
+    fns.reduce((v, f) => f(v), x);
+
 const bindReducer = (
   sendRef,
   reducer,
-  getState,
-  setState,
-  selector = (state) => state
+  getRootState,
+  setRootState,
+  selector = (s) => s
 ) => {
   const dispatcher = Object.fromEntries(
     Object.entries(reducer).map(([key, fn]) => [
       key,
       (payload) => {
         let effect;
-        const newState = produce(getState(), (draft) => {
-          effect = fn(selector ? selector(draft) : draft, payload);
+        const newState = produce(getRootState(), (draft) => {
+          effect = fn(selector(draft), payload);
         });
-        setState(newState);
+        setRootState(newState);
         if (effect && typeof effect === "function") effect(sendRef.current);
       },
     ])
   );
   return dispatcher;
+};
+
+const bindSubModules = (
+  compose,
+  arg,
+  getRootState,
+  setRootState,
+  selector = (s) => s
+) => {
+  return Object.fromEntries(
+    Object.entries(compose).map(([key, creator]) => {
+      const { reducer, compose } = creator.composable(arg);
+      let listeners = [];
+      const setState = (newState) => {
+        setRootState(newState);
+        for (let listener of listeners) {
+          listener();
+        }
+      };
+      const getState = () => {
+        return selector(getRootState())[key];
+      };
+      const sendRef = {};
+      sendRef.current =
+        reducer &&
+        applyPlugins(
+          bindReducer(
+            sendRef,
+            reducer,
+            getRootState,
+            setState,
+            pipe(selector, (s) => s[key])
+          ),
+          getRootState
+        );
+      const subStore = {
+        send: sendRef.current,
+        subscribe(listener) {
+          listeners = [...listeners, listener];
+          return () => {
+            listeners = listeners.filter((l) => l !== listener);
+          };
+        },
+        getState,
+        ...(compose && {
+          compose: bindSubModules(
+            compose,
+            arg,
+            getRootState,
+            setRootState,
+            (s) => s[key]
+          ),
+        }),
+      };
+      return [key, subStore];
+    })
+  );
+};
+
+const composedState = (compose, arg) => {
+  return Object.fromEntries(
+    Object.entries(compose).map(([key, creator]) => {
+      const { state: stateDef, compose } = creator.composable(arg);
+      return [
+        key,
+        structuredClone({
+          ...stateDef,
+          ...(compose && composedState(compose, arg)),
+        }),
+      ];
+    })
+  );
 };
 
 export const createStore = (creator) => {
@@ -30,7 +107,10 @@ export const createStore = (creator) => {
     create: (arg) => {
       const { state: stateDef, reducer, compose } = creator(arg);
       let listeners = [];
-      let state = structuredClone(stateDef);
+      let state = structuredClone({
+        ...stateDef,
+        ...(compose && composedState(compose, arg)),
+      });
       const setState = (newState) => {
         state = newState;
         for (let listener of listeners) {
@@ -41,10 +121,12 @@ export const createStore = (creator) => {
         return state;
       };
       const sendRef = {};
-      sendRef.current = applyPlugins(
-        bindReducer(sendRef, reducer, getState, setState),
-        getState
-      );
+      sendRef.current =
+        reducer &&
+        applyPlugins(
+          bindReducer(sendRef, reducer, getState, setState),
+          getState
+        );
       return {
         send: sendRef.current,
         subscribe(listener) {
@@ -54,37 +136,10 @@ export const createStore = (creator) => {
           };
         },
         getState,
+        ...(compose && {
+          compose: bindSubModules(compose, arg, getState, setState),
+        }),
       };
     },
   };
-};
-
-export const combine = (modules) => {
-  return createStore((arg) => {
-    const mapped = Object.fromEntries(
-      Object.entries(modules).map(([key, module]) => [
-        key,
-        module.composable(arg),
-      ])
-    );
-    return {
-      initialState: () => {
-        return Object.fromEntries(
-          Object.entries(mapped).map(([key, module]) => [
-            key,
-            module.initialState(),
-          ])
-        );
-      },
-      reducer: Object.fromEntries(
-        Object.entries(mapped).map(([key, module]) => [
-          key,
-          {
-            selector: (state) => state[key],
-            reducer: module.reducer,
-          },
-        ])
-      ),
-    };
-  });
 };

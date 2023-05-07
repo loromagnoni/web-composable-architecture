@@ -2,7 +2,7 @@ import { useEnvironment } from "@/tyca/react/useEnvironment";
 import { useStore } from "@/tyca/react/useStore";
 
 export const ColorDropDown = () => {
-  const [state, dispatch] = useStore();
+  const { state, dispatch } = useStore();
   const environment = useEnvironment();
   return (
     <div>

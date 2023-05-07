@@ -3,18 +3,20 @@ import ReactDOM from "react-dom/client";
 import { registerPlugin } from "@/tyca/plugin";
 import { colors } from "./environment/colors";
 import UserRepository from "./environment/userRepository";
-import DrawerModule from "../module";
+import ColorSwitcherModule from "../module";
 
-const logger = (oldState, newState, { name }) => {
-  console.log(`Applying ${name}`);
-  console.log("Old state", oldState);
-  console.log("New state", newState);
+const devTools = window.__REDUX_DEVTOOLS_EXTENSION__.connect();
+
+const reduxDevTools = (oldState, newState, { name }) => {
+  devTools.send(name, newState);
 };
 
-registerPlugin(logger);
+registerPlugin(reduxDevTools);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <DrawerModule environment={{ colors, userRepository: UserRepository() }} />
+    <ColorSwitcherModule
+      environment={{ colors, userRepository: UserRepository() }}
+    />
   </React.StrictMode>
 );

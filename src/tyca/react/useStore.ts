@@ -2,7 +2,7 @@ import { useContext, useSyncExternalStore } from "react";
 import { StoreContext } from "./StoreProvider";
 
 export const useStore = () => {
-  const module = useContext(StoreContext);
-  const state = useSyncExternalStore(module.subscribe, module.getState);
-  return [state, module.send];
+  const store = useContext(StoreContext);
+  const state = useSyncExternalStore(store.subscribe, store.getState);
+  return { state, dispatch: store.send, ...store.compose };
 };
