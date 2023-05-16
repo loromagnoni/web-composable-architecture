@@ -4,21 +4,14 @@ import { useStore } from "@/tyca/react/useStore";
 export const ColorDropDown = () => {
   const { state, dispatch } = useStore();
   const environment = useEnvironment();
+  const Dropdown = environment.UI.Dropdown;
   return (
-    <div>
-      <button onClick={dispatch.didTapDropdown}>{state.selected.name}</button>
-      {state.isOpen && (
-        <div>
-          {environment.colors.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => dispatch.didTapOption(color)}
-            >
-              {color.name}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <Dropdown
+      onClick={dispatch.didTapDropdown}
+      selected={state.selected.name}
+      isOpen={state.isOpen}
+      options={environment.colors.map((c) => c.name)}
+      onOptionClick={(o) => dispatch.didTapOption(o)}
+    />
   );
 };

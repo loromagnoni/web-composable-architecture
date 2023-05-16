@@ -2,7 +2,11 @@ import { createStore } from "@/tyca/module";
 
 export default createStore(({ userRepository }) => ({
   state: {
-    name: null,
+    user: {
+      name: null,
+      email: null,
+      avatarSrc: null,
+    },
     isLoading: false,
   },
   reducer: {
@@ -13,9 +17,9 @@ export default createStore(({ userRepository }) => ({
         dispatch.handleUserResponse(user);
       };
     },
-    handleUserResponse: (state, { name }) => {
+    handleUserResponse: (state, user) => {
       state.isLoading = false;
-      state.name = name;
+      state.user = user;
     },
   },
 }));

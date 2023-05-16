@@ -1,0 +1,50 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@500&display=swap");
+
+.dropdown {
+  background-color: #0e0e0e;
+  color: #ffffff;
+  border-radius: 12px;
+  font-family: "Ubuntu", sans-serif;
+  padding: 16px 24px;
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
+}
+
+.dropdown:hover {
+  background-color: #313131;
+}
+
+.dropdown-container {
+  position: relative;
+  max-width: 250px;
+  width: 100%;
+}
+
+.rotate-icon {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  background-color: #0e0e0e;
+  color: #cdcdcd;
+  position: absolute;
+  width: -webkit-fill-available;
+  margin-top: 4px;
+  padding: 16px;
+  border-radius: 12px;
+  font-family: "Ubuntu", sans-serif;
+}
+
+.dropdown-option {
+  padding: 12px 8px;
+  cursor: pointer;
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.dropdown-option-selected {
+  background-color: #0a0a0a;
+  color: #ffffff;
+}

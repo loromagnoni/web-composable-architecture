@@ -1,14 +1,15 @@
 import { useEnvironment } from "@/tyca/react/useEnvironment";
-
+import style from "./styles.module.css";
 export default function MainPanel() {
-  const environment = useEnvironment();
+  const { color, UI } = useEnvironment();
   return (
     <div
+      className={style["main-panel"]}
       style={{
-        backgroundColor: environment.color.value,
+        backgroundColor: color.value,
       }}
     >
-      <h1>Main Panel</h1>
+      <UI.TextHeading content="Main Panel" level={1} />
     </div>
   );
 }

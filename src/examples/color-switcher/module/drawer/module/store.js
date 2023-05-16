@@ -7,8 +7,11 @@ export default createStore(() => ({
     isOpen: false,
   },
   reducer: {
-    didTapIcon: (state) => {
-      state.isOpen = !state.isOpen;
+    didTapOpenButton: (state) => {
+      state.isOpen = true;
+    },
+    didTapCloseButton: (state) => {
+      state.isOpen = false;
     },
   },
   compose: {

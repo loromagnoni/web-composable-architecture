@@ -1,0 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@500&display=swap");
+.button {
+  background-color: white;
+  color: black;
+  font-family: "Ubuntu", sans-serif;
+  font-size: 10px;
+  line-height: 20px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: inline;
+  padding: 10px 24px;
+  border-radius: 30px;
+}
+
+.button:hover {
+  text-decoration: line-through;
+}

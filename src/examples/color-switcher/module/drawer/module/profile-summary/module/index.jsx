@@ -1,6 +1,6 @@
 import { createModule } from "@/tyca/react/createModule";
 import store from "./store";
-import ProfileSummary from "./view";
+import ProfileSummary from "./view/view";
 
 export default createModule({
   View: ProfileSummary,

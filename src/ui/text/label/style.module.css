@@ -1,0 +1,11 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap");
+
+.label {
+  font-weight: bold;
+  font-family: "Ubuntu", sans-serif;
+  font-size: 9px;
+  line-height: 20px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #cdcdcd;
+}

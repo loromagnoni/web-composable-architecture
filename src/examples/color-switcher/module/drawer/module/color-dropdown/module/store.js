@@ -1,6 +1,6 @@
 import { createStore } from "@/tyca/module";
 
-export default createStore(({ colors }) => ({
+export default createStore(({ colors, UI }) => ({
   state: {
     isOpen: false,
     selected: colors[0],
@@ -10,7 +10,7 @@ export default createStore(({ colors }) => ({
       state.isOpen = !state.isOpen;
     },
     didTapOption: (state, color) => {
-      state.selected = color;
+      state.selected = colors.find((c) => c.name === color);
       state.isOpen = false;
     },
   },
