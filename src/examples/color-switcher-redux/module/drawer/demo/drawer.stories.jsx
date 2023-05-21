@@ -1,9 +1,10 @@
 import { UI } from "@/ui";
-import { ColorDropDownModule } from "../module/index";
 import { colors } from "./environment/colors";
+import DrawerModule from "../module/index";
+import UserRepository from "./environment/userRepository";
 
 const meta = {
-  component: ColorDropDownModule,
+  component: DrawerModule,
 };
 
 export default meta;
@@ -12,6 +13,7 @@ export const Default = {
   args: {
     environment: {
       colors,
+      userRepository: UserRepository(),
       UI,
     },
   },
